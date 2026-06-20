@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 PYTHON = sys.executable
-MODULE = "src.main"
+MODULE = "src.logsum"
 PROJECT_ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures"
 
