@@ -49,23 +49,21 @@ def run(input_path: str, output_path: str) -> int:
                 print(f"WARN: skipped row {row_num} — bad timestamp", file=sys.stderr)
                 continue
 
-            level = _normalise_level(row.get("level", ""))
-            service = _normalise_service(row.get("service", ""))
-            key = (level, service)
-
-            if key not in groups:
-                groups[key] = {"count": 0, "first_seen": ts, "last_seen": ts}
-            g = groups[key]
+            key = (
+                _normalise_level(row.get("level", "")),
+                _normalise_service(row.get("service", "")),
+            )
+            g = groups.setdefault(key, {"count": 0, "first_seen": ts, "last_seen": ts})
             g["count"] += 1
             if ts < g["first_seen"]:
                 g["first_seen"] = ts
             if ts > g["last_seen"]:
                 g["last_seen"] = ts
 
-    out_rows = sorted(
-        [{"level": k[0], "service": k[1], **v} for k, v in groups.items()],
-        key=lambda r: (r["level"], r["service"]),
-    )
+    out_rows = [
+        {"level": level, "service": service, **stats}
+        for (level, service), stats in sorted(groups.items())
+    ]
 
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["level", "service", "count", "first_seen", "last_seen"])
