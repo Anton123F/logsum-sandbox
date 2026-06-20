@@ -1,0 +1,8 @@
+timestamp,level,service,message
+2024-01-15T08:01:00Z,INFO,auth,User logged in
+2024-01-15T08:03:22Z,INFO,auth,Token refreshed
+2024-01-15T08:05:10Z,ERROR,payments,Payment failed
+2024-01-15T08:07:44Z,warn,AUTH,Slow query detected
+2024-01-15T08:09:01Z,,payments,Level is missing
+2024-01-15T08:11:30Z,ERROR,payments,Connection timeout
+not-a-timestamp,INFO,auth,This row has a bad timestamp

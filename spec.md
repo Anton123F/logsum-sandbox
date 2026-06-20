@@ -85,3 +85,9 @@ Warnings go to **stderr**. Normal output (progress, summary line count) goes to 
 - Deduplication of identical rows
 - Internationalisation or locale-aware sorting
 - Any third-party package (stdlib only)
+
+## Sign-off
+Anton_Fiadotau 2026-06-20
+## Implementation notes
+- ignore moment with timestamp, skipp it and does not print required message.
+- i thought it create a table looks like output. 
