@@ -15,7 +15,7 @@ def _normalise_service(raw: str) -> str:
     return s if s else "unknown"
 
 
-def run(input_path: str, output_path: str) -> int:
+def run(input_path: str, output_path: str, min_count: int = 1) -> int:
     p = Path(input_path)
     if not p.exists():
         print(f"ERROR: input file not found: {input_path}", file=sys.stderr)
@@ -63,6 +63,7 @@ def run(input_path: str, output_path: str) -> int:
     out_rows = [
         {"level": level, "service": service, **stats}
         for (level, service), stats in sorted(groups.items())
+        if stats["count"] >= min_count
     ]
 
     with open(output_path, "w", newline="", encoding="utf-8") as f:
@@ -78,5 +79,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", default="data/events.csv")
     ap.add_argument("--output", default="summary.csv")
+    ap.add_argument("--min-count", type=int, default=1)
     args = ap.parse_args()
-    sys.exit(run(args.input, args.output))
+    sys.exit(run(args.input, args.output, args.min_count))
