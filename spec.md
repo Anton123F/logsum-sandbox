@@ -78,6 +78,9 @@ Exit codes:
 
 Warnings go to **stderr**. Normal output (progress, summary line count) goes to **stdout**.
 
+## Implementation notes
+- The spec lists `timestamp` in the required-columns table but the edge-case table says "Missing required column (not timestamp)" — so `timestamp` is intentionally excluded from the exit-1 check; a missing timestamp column causes every row to be skipped with warnings rather than an immediate error exit.
+
 ## Out of Scope
 - Filtering by date range, level, or service
 - Real-time or streaming input

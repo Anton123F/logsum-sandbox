@@ -15,6 +15,17 @@ def _normalise_service(raw: str) -> str:
     return s if s else "unknown"
 
 
+def _valid_ts(raw: str) -> str | None:
+    ts = raw.strip()
+    if not ts:
+        return None
+    try:
+        datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        return ts
+    except ValueError:
+        return None
+
+
 def run(input_path: str, output_path: str, min_count: int = 1) -> int:
     p = Path(input_path)
     if not p.exists():
@@ -40,12 +51,8 @@ def run(input_path: str, output_path: str, min_count: int = 1) -> int:
         groups: dict[tuple[str, str], dict] = {}
 
         for row_num, row in enumerate(reader, start=2):
-            ts = row.get("timestamp", "").strip()
-            try:
-                if not ts:
-                    raise ValueError
-                datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            except ValueError:
+            ts = _valid_ts(row.get("timestamp", ""))
+            if ts is None:
                 print(f"WARN: skipped row {row_num} — bad timestamp", file=sys.stderr)
                 continue
 
