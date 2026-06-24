@@ -16,13 +16,11 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def run_cli(input_path: Path, output_path: Path) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [PYTHON, "-m", MODULE, "--input", str(input_path), "--output", str(output_path)],
-        capture_output=True,
-        text=True,
-        cwd=str(PROJECT_ROOT),
-    )
+def run_cli(input_path: Path, output_path: Path, min_count: int = None) -> subprocess.CompletedProcess:
+    cmd = [PYTHON, "-m", MODULE, "--input", str(input_path), "--output", str(output_path)]
+    if min_count is not None:
+        cmd += ["--min-count", str(min_count)]
+    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(PROJECT_ROOT))
 
 
 def write_events(path: Path, header: list, rows: list) -> None:
@@ -148,6 +146,70 @@ def test_input_file_not_found_exits_1(tmp_path):
 
 
 # ── 8. CLI --output flag writes summary to the specified path ─────────────────
+# ── 9. --min-count filtering ──────────────────────────────────────────────────
+
+def test_min_count_filters_below_threshold(tmp_path):
+    inp = tmp_path / "events.csv"
+    write_events(inp, ["timestamp", "level", "service", "message"], [
+        ["2024-01-15T08:00:00Z", "ERROR", "auth", "a"],
+        ["2024-01-15T08:01:00Z", "ERROR", "auth", "b"],
+        ["2024-01-15T08:02:00Z", "ERROR", "auth", "c"],
+        ["2024-01-15T08:03:00Z", "INFO",  "api",  "d"],  # count=1, below threshold
+    ])
+    out = tmp_path / "summary.csv"
+    result = run_cli(inp, out, min_count=2)
+
+    assert result.returncode == 0
+    rows = read_summary(out)
+    keys = [(r["level"], r["service"]) for r in rows]
+    assert ("ERROR", "auth") in keys
+    assert ("INFO", "api") not in keys
+
+
+def test_min_count_default_keeps_all_groups(tmp_path):
+    inp = tmp_path / "events.csv"
+    write_events(inp, ["timestamp", "level", "service", "message"], [
+        ["2024-01-15T08:00:00Z", "ERROR", "auth", "a"],
+        ["2024-01-15T08:01:00Z", "INFO",  "api",  "b"],
+    ])
+    out_default = tmp_path / "default.csv"
+    out_explicit = tmp_path / "explicit.csv"
+    run_cli(inp, out_default)
+    run_cli(inp, out_explicit, min_count=1)
+
+    assert read_summary(out_default) == read_summary(out_explicit)
+
+
+def test_min_count_filters_all_groups(tmp_path):
+    inp = tmp_path / "events.csv"
+    write_events(inp, ["timestamp", "level", "service", "message"], [
+        ["2024-01-15T08:00:00Z", "INFO", "auth", "a"],
+    ])
+    out = tmp_path / "summary.csv"
+    result = run_cli(inp, out, min_count=100)
+
+    assert result.returncode == 0
+    rows = read_summary(out)
+    assert rows == []
+
+
+def test_min_count_exact_boundary(tmp_path):
+    inp = tmp_path / "events.csv"
+    write_events(inp, ["timestamp", "level", "service", "message"], [
+        ["2024-01-15T08:00:00Z", "WARN", "db",  "a"],
+        ["2024-01-15T08:01:00Z", "WARN", "db",  "b"],
+        ["2024-01-15T08:02:00Z", "WARN", "db",  "c"],  # count=3 → included at N=3
+        ["2024-01-15T08:03:00Z", "INFO", "api", "d"],
+        ["2024-01-15T08:04:00Z", "INFO", "api", "e"],  # count=2 → excluded at N=3
+    ])
+    out = tmp_path / "summary.csv"
+    result = run_cli(inp, out, min_count=3)
+
+    assert result.returncode == 0
+    rows = read_summary(out)
+    keys = [(r["level"], r["service"]) for r in rows]
+    assert ("WARN", "db") in keys
+    assert ("INFO", "api") not in keys
 
 def test_cli_output_flag_writes_to_custom_path(tmp_path):
     custom_out = tmp_path / "subdir" / "out.csv"

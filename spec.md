@@ -68,6 +68,7 @@ python -m src.main [--input PATH] [--output PATH]
 |------|---------|-------------|
 | `--input` | `data/events.csv` | Path to input CSV |
 | `--output` | `summary.csv` | Path to output CSV |
+| `--min-count` | `1` | Omit groups whose count is below N |
 
 Exit codes:
 
